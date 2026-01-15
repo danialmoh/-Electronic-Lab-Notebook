@@ -22,288 +22,294 @@ def create_sample_data():
     with DatabaseManager() as db:
         # Create sample projects
         project1 = db.create_project(
-            name="Protein Expression Study",
-            description="Study of recombinant protein expression in E. coli"
+            name="IR-UV Ion Dip Spectroscopy of Tryptophan",
+            description="Two-color IR/UV experiments on jet-cooled tryptophan clusters"
         )
         project2 = db.create_project(
-            name="Drug Screening Assay",
-            description="High-throughput screening of potential drug candidates"
+            name="Ultrafast Pump-Probe Beamline Commissioning",
+            description="Setup and diagnostics for 400 nm pump / broadband probe experiments"
         )
         
         # Create sample experiments
         exp1 = db.create_experiment(
             project_id=project1.id,
-            title="Small-scale expression test",
-            description="Test expression of target protein in BL21(DE3) cells",
+            title="Jet-cooled tryptophan monomer scan",
+            description="Record REMPI spectrum and IR ion-dip features of isolated tryptophan",
             status="Final",
             experiment_date=datetime.now() - timedelta(days=5),
-            tags="expression, BL21, IPTG"
+            tags="REMPI, IR-UV, jet",
+            wavelength_range="212-230 nm",
+            pulse_energy=0.3,
+            pulse_energy_unit="mJ",
+            repetition_rate=10.0,
+            vacuum_level=2e-6,
+            sample_temperature=120.0,
+            instrument_config="Nd:YAG pumped OPO for IR, frequency-doubled dye laser for UV"
         )
         
         exp2 = db.create_experiment(
             project_id=project1.id,
-            title="Protein purification",
-            description="Purify expressed protein using Ni-NTA chromatography",
+            title="Tryptophan dimer assignment",
+            description="Two-color scans on dimer bands with IR depletion",
             status="Draft",
             experiment_date=datetime.now() - timedelta(days=2),
-            tags="purification, Ni-NTA"
+            tags="cluster, IR depletion",
+            wavelength_range="2800-3600 cm-1",
+            pulse_energy=0.4,
+            pulse_energy_unit="mJ",
+            repetition_rate=10.0,
+            vacuum_level=1.5e-6,
+            sample_temperature=110.0,
+            instrument_config="Same as exp1 with delayed IR beam"
         )
         
         exp3 = db.create_experiment(
             project_id=project2.id,
-            title="Compound library screening",
-            description="Screen 1000 compounds against target enzyme",
+            title="Pump-probe cross-correlation",
+            description="400/800 nm cross-correlation and chirp characterization",
             status="Draft",
             experiment_date=datetime.now(),
-            tags="screening, HTS, enzyme"
+            tags="pump-probe, diagnostics",
+            wavelength_range="400-800 nm",
+            pulse_energy=1.2,
+            pulse_energy_unit="µJ",
+            repetition_rate=250.0,
+            vacuum_level=8e-7,
+            sample_temperature=295.0,
+            instrument_config="Ti:sapph amplifier, NOPA for visible probe"
         )
         
         # Create sample entries
         entry1 = db.create_entry(
             experiment_id=exp1.id,
-            title="Initial setup and culture preparation",
-            content="""# Culture Preparation
+            title="Beam alignment and REMPI scan",
+            content="""# UV Beam Alignment
 
-## Materials
-- LB broth
-- Kanamycin (50 µg/mL)
-- BL21(DE3) competent cells
-- IPTG
+## Laser Settings
+- Dye: Styryl 9, doubled to 218 nm
+- UV pulse energy: 0.3 mJ
+- IR OPO parked at 3.2 µm for depletion check
 
 ## Procedure
-1. Prepare 5 mL LB + Kanamycin
-2. Inoculate with single colony
-3. Grow overnight at 37°C, 200 rpm
-4. Dilute 1:100 into fresh media
-5. Grow to OD600 = 0.6
-6. Induce with 1 mM IPTG
-7. Express for 4 hours at 30°C
+1. Align UV through skimmer apertures using fluorescent card
+2. Optimize ion optics for tof peak at 8.2 µs
+3. Record REMPI scan from 212-230 nm (0.05 nm steps)
+4. Trigger IR 200 ns after UV to confirm depletion
 
-## Results
-Final OD600: 2.1
-Expression observed by SDS-PAGE
+## Observations
+- Strong band at 217.4 nm (monomer S1 origin)
+- IR depletion of 30% when tuned to 3520 cm-1
 
 ## Notes
-- Temperature reduction to 30°C improved solubility
-- Consider testing 0.5 mM IPTG in next trial"""
+- Need longer averaging for weak hot bands
+- Consider lowering valve temperature to 115 K"""
         )
         
         entry2 = db.create_entry(
             experiment_id=exp2.id,
-            title="Chromatography setup",
-            content="""# Ni-NTA Purification Protocol
+            title="IR ion-dip map of dimer band B",
+            content="""# IR Ion-Dip Protocol
 
-## Buffer Preparation
-- **Binding Buffer**: 50 mM Tris-HCl pH 8.0, 300 mM NaCl, 10 mM imidazole
-- **Wash Buffer**: 50 mM Tris-HCl pH 8.0, 300 mM NaCl, 20 mM imidazole  
-- **Elution Buffer**: 50 mM Tris-HCl pH 8.0, 300 mM NaCl, 250 mM imidazole
-
-## Equipment
-- ÄKTA FPLC system
-- Ni-NTA Superflow column (5 mL)
-- UV detector at 280 nm
+## Scan Plan
+- UV fixed at 223.1 nm (band B)
+- IR scan: 2800–3600 cm⁻¹ in 2 cm⁻¹ steps
+- Averaging: 500 shots per point
 
 ## Procedure
-1. Equilibrate column with 5 column volumes (CV) binding buffer
-2. Load clarified lysate (filtered through 0.45 µm)
-3. Wash with 10 CV wash buffer
-4. Elute with linear gradient to 100% elution buffer over 20 CV
-5. Collect 1 mL fractions
+1. Lock UV to band B using wavemeter feedback
+2. Align IR focus at interaction region (use burn paper)
+3. Scan IR while recording depletion and tof spectra
 
-## Expected Results
-- Target protein should elute at ~200 mM imidazole
-- Monitor absorbance at 280 nm
-- Analyze fractions by SDS-PAGE"""
+## Results
+- Sharp depletion features at 3305, 3442, 3521 cm⁻¹
+- Mode at 3521 cm⁻¹ matches monomer ν3, suggests shared chromophore
+
+## Next Steps
+- Run isotopic substitution with deuterated backing gas
+- Simulate spectrum with anharmonic calculations"""
         )
         
         # Create sample reagents
-        reagent1 = db.create_reagent(
-            name="IPTG",
-            description="Isopropyl β-D-1-thiogalactopyranoside",
-            catalog_number="I6758",
-            supplier="Sigma-Aldrich",
-            concentration=1.0,
-            unit="M",
-            storage_location="Freezer A, Shelf 2",
-            safety_info="Handle with gloves. Avoid inhalation."
+        material1 = db.create_material(
+            name="KDP Doubling Crystal",
+            description="Type-I 5x5x10 mm KDP for 532 nm generation",
+            material_type="Crystal",
+            vendor="EKSMA Optics",
+            part_number="KDP-0510",
+            wavelength_range="350-1100 nm",
+            damage_threshold=0.5,
+            unit="GW/cm^2",
+            storage_location="Optics cabinet A1",
+            handling_notes="Hygroscopic, keep in desiccator"
         )
         
-        reagent2 = db.create_reagent(
-            name="Kanamycin",
-            description="Antibiotic for bacterial selection",
-            catalog_number="K1600",
-            supplier="Sigma-Aldrich",
-            concentration=50,
-            unit="mg/mL",
-            storage_location="Fridge B, Door 1",
-            safety_info="Antibiotic - handle with care"
+        material2 = db.create_material(
+            name="MgF2 Window",
+            description="2 mm thick MgF2 for VUV beamline",
+            material_type="Optic",
+            vendor="Thorlabs",
+            part_number="WG41010",
+            wavelength_range="120-7000 nm",
+            damage_threshold=5.0,
+            unit="J/cm^2",
+            storage_location="Optics drawer B3",
+            handling_notes="Clean with dry nitrogen, avoid fingerprints"
         )
         
-        reagent3 = db.create_reagent(
-            name="Ni-NTA Agarose",
-            description="Nickel-charged affinity chromatography resin",
-            catalog_number="30210",
-            supplier="Qiagen",
-            concentration=None,
-            unit="mL",
-            storage_location="Cold Room, Shelf 3",
-            safety_info="Contains nickel - avoid skin contact"
+        material3 = db.create_material(
+            name="IR Hollow-core Fiber",
+            description="1 m Kagome fiber for pulse delivery",
+            material_type="Fiber",
+            vendor="GLOphotonics",
+            part_number="HC-1200",
+            wavelength_range="1.2-2.0 µm",
+            damage_threshold=2.0,
+            unit="GW/cm^2",
+            storage_location="Fiber spool rack",
+            handling_notes="Minimum bend radius 30 cm"
         )
         
-        # Link reagents to entries
-        db.link_reagent_to_entry(
+        # Link materials to entries
+        db.link_material_to_entry(
             entry_id=entry1.id,
-            reagent_id=reagent1.id,
-            quantity_used=1.0,
-            unit="mM",
-            notes="Used for induction"
+            material_id=material1.id,
+            usage_context="Frequency doubling dye output",
+            quantity_used=1,
+            unit="unit",
+            notes="Realigned, confirmed phase matching"
         )
         
-        db.link_reagent_to_entry(
+        db.link_material_to_entry(
             entry_id=entry1.id,
-            reagent_id=reagent2.id,
-            quantity_used=50,
-            unit="µg/mL",
-            notes="Antibiotic selection"
+            material_id=material2.id,
+            usage_context="Window between source and TOF",
+            quantity_used=None,
+            notes="Cleaned with acetone, no scratches"
         )
         
-        db.link_reagent_to_entry(
+        db.link_material_to_entry(
             entry_id=entry2.id,
-            reagent_id=reagent3.id,
-            quantity_used=5,
-            unit="mL",
-            notes="Column packing"
+            material_id=material3.id,
+            usage_context="Deliver IR beam to chamber",
+            quantity_used=1.0,
+            unit="m",
+            notes="Transmission 65%, acceptable"
         )
         
-        # Create sample samples
-        sample1 = db.create_sample(
-            name="BL21(DE3) glycerol stock",
-            description="Competent cells for protein expression",
-            sample_type="Bacterial stock",
-            storage_location="Freezer A, Box 1",
-            quantity=100,
-            unit="µL"
+        # Create sample targets
+        target1 = db.create_target(
+            name="Tryptophan seeded jet",
+            composition="1% tryptophan in heptane, seeded in He",
+            target_type="Supersonic jet",
+            backing_gas="Helium",
+            stagnation_pressure=2.0,
+            temperature=130.0,
+            storage_location="Valve box"
         )
         
-        sample2 = db.create_sample(
-            name="Target protein lysate",
-            description="Clarified lysate from expression test",
-            sample_type="Protein sample",
-            storage_location="Freezer B, Shelf 1",
-            quantity=50,
-            unit="mL"
+        target2 = db.create_target(
+            name="NO/Argon probe mix",
+            composition="500 ppm NO in argon",
+            target_type="Gas cell",
+            backing_gas="Argon",
+            stagnation_pressure=1.0,
+            temperature=295.0,
+            storage_location="Gas manifold"
         )
         
-        # Create sample equipment
-        equipment1 = db.create_equipment(
-            name="Thermal Cycler",
-            model="T100",
-            serial_number="TC12345",
-            location="Lab Bench 1",
+        # Create sample instruments
+        instrument1 = db.create_instrument(
+            name="OPA Pump Laser",
+            model="Spectra-Physics Spitfire",
+            serial_number="SP-OPA-3321",
+            location="Laser Room Bay 2",
             status="Available",
-            last_maintenance=datetime.now() - timedelta(days=30)
+            last_maintenance=datetime.now() - timedelta(days=30),
+            beamline_position="Pump table",
+            control_software="LabVIEW OPC"
         )
         
-        equipment2 = db.create_equipment(
-            name="Centrifuge",
-            model="5424 R",
-            serial_number="CF67890",
-            location="Equipment Room A",
-            status="Available",
-            last_maintenance=datetime.now() - timedelta(days=15)
-        )
-        
-        equipment3 = db.create_equipment(
-            name="FPLC System",
-            model="ÄKTA pure",
-            serial_number="AK11111",
-            location="Cold Room",
+        instrument2 = db.create_instrument(
+            name="Time-of-Flight Spectrometer",
+            model="Jordan TOF-2",
+            serial_number="JORDAN-221",
+            location="Beamline vacuum chamber",
             status="In Use",
-            last_maintenance=datetime.now() - timedelta(days=7)
+            last_maintenance=datetime.now() - timedelta(days=15),
+            beamline_position="Interaction region",
+            control_software="TOFDAQ"
+        )
+        
+        instrument3 = db.create_instrument(
+            name="Delay Stage",
+            model="Newport XPS",
+            serial_number="NPT-8891",
+            location="Probe table",
+            status="Maintenance",
+            last_maintenance=datetime.now() - timedelta(days=7),
+            beamline_position="Probe arm",
+            control_software="Newport XPS"
         )
         
         # Create sample protocols
         protocol1 = db.create_protocol(
-            name="Bacterial Transformation Protocol",
-            description="Standard protocol for transforming E. coli with plasmid DNA",
-            content="""# Bacterial Transformation Protocol
+            name="Supersonic Jet Alignment SOP",
+            description="Standard procedure for aligning laser beams through the skimmed molecular beam",
+            content="""# Supersonic Jet Alignment SOP
 
-## Materials
-- Chemically competent E. coli cells
-- Plasmid DNA (1-10 ng)
-- SOC medium
-- LB agar plates with appropriate antibiotic
+## Prerequisites
+- Chamber at < 5 × 10⁻⁶ mbar
+- Valve warmed to operating temperature
+- IR and UV lasers warmed up
 
-## Equipment
-- Water bath (42°C)
-- Incubator (37°C)
-- Shaking incubator
+## Steps
+1. **Mechanical Alignment**
+   - Insert alignment rod through skimmer, ensure < 0.2 mm offset.
+   - Use theodolite to match beam height (95 cm from floor).
+2. **UV Alignment**
+   - Set dye laser to 230 nm, low power (<0.1 mJ).
+   - Use fluorescing card to trace through skimmer and ion optics.
+3. **IR Alignment**
+   - Switch to HeNe pilot beam, overlap with UV using dichroic.
+   - Verify focus at interaction region with burn paper.
+4. **Diagnostics**
+   - Record TOF background, ensure no stray ions.
+   - Run REMPI scan of benzene as reference.
 
-## Procedure
-1. Thaw competent cells on ice (50 µL per transformation)
-2. Add plasmid DNA to cells, mix gently
-3. Incubate on ice for 30 minutes
-4. Heat shock at 42°C for 45 seconds
-5. Return to ice for 2 minutes
-6. Add 450 µL SOC medium
-7. Incubate at 37°C for 1 hour with shaking
-8. Plate 100-200 µL on selective agar plates
-9. Incubate overnight at 37°C
-
-## Expected Results
-- Transformation efficiency: 10^6 - 10^8 CFU/µg DNA
-- Colonies should appear after 12-16 hours
-
-## Troubleshooting
-- Low efficiency: Check DNA quality, cell competency
-- No colonies: Verify antibiotic concentration, cell viability""",
-            created_by="Dr. Smith"
+## Safety
+- Wear goggles appropriate for both UV and IR wavelengths.
+- Close beam shutters when adjusting optics.""",
+            created_by="Beamline Lead"
         )
         
         protocol2 = db.create_protocol(
-            name="SDS-PAGE Protocol",
-            description="Standard protocol for protein analysis by SDS-PAGE",
-            content="""# SDS-PAGE Protocol
-
-## Materials
-- Acrylamide/Bis solution (30%)
-- Tris-Glycine SDS running buffer
-- Sample buffer (2X Laemmli)
-- Molecular weight markers
-- Coomassie Brilliant Blue stain
+            name="Pump-Probe Delay Calibration",
+            description="Procedure to calibrate temporal overlap using cross-correlation",
+            content="""# Pump-Probe Delay Calibration
 
 ## Equipment
-- Gel electrophoresis apparatus
-- Power supply
-- Gel casting system
+- Autocorrelator or thin BBO crystal
+- Fast photodiodes for pump and probe
+- Digitizer/oscilloscope
 
 ## Procedure
-### Gel Preparation
-1. Prepare resolving gel (10-12% depending on protein size)
-2. Prepare stacking gel (5%)
-3. Assemble gel casting apparatus
-4. Allow polymerization (30-45 minutes)
-
-### Sample Preparation
-1. Mix sample with 2X Laemmli buffer
-2. Heat at 95°C for 5 minutes
-3. Cool on ice
-
-### Electrophoresis
-1. Assemble gel in electrophoresis chamber
-2. Fill chambers with running buffer
-3. Load samples and molecular weight marker
-4. Run at 120 V until dye front reaches bottom
-
-### Staining
-1. Remove gel and place in staining solution
-2. Stain for 1-2 hours
-3. Destain until clear background achieved
+1. **Initial Coarse Overlap**
+   - Set delay stage to nominal zero.
+   - Place fast detector, observe pump and probe arrival times.
+2. **Cross-Correlation**
+   - Insert BBO in beam path, monitor sum-frequency signal.
+   - Scan delay ±2 ps, record intensity.
+3. **Fit & Record**
+   - Fit to Gaussian to extract FWHM and zero delay.
+   - Store calibration curve in logbook.
+4. **Update Stage**
+   - Zero the controller at fitted position.
+   - Note thermal drift if >50 fs/hour.
 
 ## Notes
-- Use appropriate gel percentage for protein size range
-- Include reducing agent (β-mercaptoethanol or DTT) for denaturing conditions""",
-            created_by="Lab Manager"
+- Repeat weekly or after realignment.
+- For broadband probe, use transient absorption signal instead.""",
+            created_by="Ultrafast Team"
         )
         
         print("Sample data created successfully!")
@@ -313,9 +319,9 @@ Expression observed by SDS-PAGE
         print(f"- Projects: {len(db.get_projects())}")
         print(f"- Experiments: {len(db.get_experiments())}")
         print(f"- Entries: {len(db.get_entries())}")
-        print(f"- Reagents: {len(db.get_reagents())}")
-        print(f"- Samples: {len(db.get_samples())}")
-        print(f"- Equipment: {len(db.get_equipment())}")
+        print(f"- Materials: {len(db.get_materials())}")
+        print(f"- Targets: {len(db.get_targets())}")
+        print(f"- Instruments: {len(db.get_instruments())}")
         print(f"- Protocols: {len(db.get_protocols())}")
 
 def main():

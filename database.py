@@ -60,15 +60,36 @@ class DatabaseManager:
         return False
     
     # Experiment operations
-    def create_experiment(self, project_id: int, title: str, description: str = None, 
-                         status: str = 'Draft', experiment_date: datetime = None, tags: str = None) -> Experiment:
+    def create_experiment(
+        self,
+        project_id: int,
+        title: str,
+        description: str = None,
+        status: str = 'Draft',
+        experiment_date: datetime = None,
+        tags: str = None,
+        wavelength_range: str = None,
+        pulse_energy: float = None,
+        pulse_energy_unit: str = None,
+        repetition_rate: float = None,
+        vacuum_level: float = None,
+        sample_temperature: float = None,
+        instrument_config: str = None,
+    ) -> Experiment:
         experiment = Experiment(
             project_id=project_id,
             title=title,
             description=description,
             status=status,
             experiment_date=experiment_date or datetime.utcnow(),
-            tags=tags
+            tags=tags,
+            wavelength_range=wavelength_range,
+            pulse_energy=pulse_energy,
+            pulse_energy_unit=pulse_energy_unit,
+            repetition_rate=repetition_rate,
+            vacuum_level=vacuum_level,
+            sample_temperature=sample_temperature,
+            instrument_config=instrument_config,
         )
         self.session.add(experiment)
         self.session.commit()
