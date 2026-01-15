@@ -6,7 +6,7 @@ from models import Attachment
 from utils import render_markdown_with_latex, save_uploaded_file, display_success, display_error, display_warning
 
 def render_entry_editor(entry_id=None, experiment_id=None):
-    """Render the advanced entry editor with Markdown/LaTeX support and reagent linking"""
+    """Render the advanced entry editor with Markdown/LaTeX support and material linking"""
     
     with DatabaseManager() as db:
         # Get entry data if editing
@@ -37,7 +37,9 @@ def render_entry_editor(entry_id=None, experiment_id=None):
         st.markdown(f"**Experiment:** {experiment.title}")
         
         # Editor tabs
-        editor_tab, preview_tab, attachments_tab, reagents_tab = st.tabs(["✏️ Edit", "👁️ Preview", "📎 Attachments", "🧪 Linked Reagents"])
+        editor_tab, preview_tab, attachments_tab, materials_tab = st.tabs(
+            ["✏️ Edit", "👁️ Preview", "📎 Attachments", "🧱 Linked Materials"]
+        )
         
         with editor_tab:
             render_edit_form(entry, experiment, db)
@@ -48,8 +50,8 @@ def render_entry_editor(entry_id=None, experiment_id=None):
         with attachments_tab:
             render_attachments(entry, db)
         
-        with reagents_tab:
-            render_linked_reagents(entry, experiment, db)
+        with materials_tab:
+            render_linked_materials(entry, experiment, db)
 
 def render_edit_form(entry, experiment, db):
     """Render the entry editing form"""
@@ -244,30 +246,33 @@ def render_attachments(entry, db):
     else:
         st.info("Please save the entry first before adding attachments")
 
-def render_linked_reagents(entry, experiment, db):
-    """Render reagent linking functionality"""
+def render_linked_materials(entry, experiment, db):
+    """Render material linking functionality"""
     
-    st.markdown("### Linked Reagents")
+    st.markdown("### Linked Materials")
     
     if entry:
-        # Show existing linked reagents
-        linked_reagents = db.get_linked_reagents(entry.id)
+        linked_materials = db.get_linked_materials(entry.id)
         
-        if linked_reagents:
-            st.markdown(f"**Currently Linked ({len(linked_reagents)}):**")
+        if linked_materials:
+            st.markdown(f"**Currently Linked ({len(linked_materials)}):**")
             
-            for link in linked_reagents:
-                reagent = db.get_reagent(link.reagent_id)
-                if reagent:
-                    with st.expander(f"🧪 {reagent.name}"):
+            for link in linked_materials:
+                material = db.get_material(link.material_id)
+                if material:
+                    with st.expander(f"🧱 {material.name}"):
                         col1, col2 = st.columns([3, 1])
                         
                         with col1:
-                            st.markdown(f"**Reagent:** {reagent.name}")
-                            if reagent.supplier:
-                                st.markdown(f"**Supplier:** {reagent.supplier}")
-                            if reagent.catalog_number:
-                                st.markdown(f"**Catalog #:** {reagent.catalog_number}")
+                            st.markdown(f"**Material:** {material.name}")
+                            if material.material_type:
+                                st.markdown(f"**Type:** {material.material_type}")
+                            if material.vendor:
+                                st.markdown(f"**Vendor:** {material.vendor}")
+                            if material.part_number:
+                                st.markdown(f"**Part #:** {material.part_number}")
+                            if link.usage_context:
+                                st.markdown(f"**Usage:** {link.usage_context}")
                             if link.quantity_used:
                                 st.markdown(f"**Quantity Used:** {link.quantity_used} {link.unit or 'units'}")
                             if link.notes:
@@ -275,57 +280,54 @@ def render_linked_reagents(entry, experiment, db):
                             st.markdown(f"**Linked:** {link.linked_at.strftime('%Y-%m-%d %H:%M')}")
                         
                         with col2:
-                            if st.button("🗑️ Remove", key=f"remove_reagent_{link.id}"):
-                                if db.remove_linked_reagent(link.id):
-                                    display_success("Reagent link removed")
+                            if st.button("🗑️ Remove", key=f"remove_material_{link.id}"):
+                                if db.remove_linked_material(link.id):
+                                    display_success("Material link removed")
                                     st.rerun()
                                 else:
-                                    display_error("Failed to remove reagent link")
+                                    display_error("Failed to remove material link")
                 
                 st.markdown("---")
         else:
-            st.info("No reagents linked to this entry")
+            st.info("No materials linked to this entry")
         
-        # Add new reagent link
-        st.markdown("### Link New Reagent")
+        st.markdown("### Link New Material")
         
-        # Get available reagents
-        reagents = db.get_reagents()
+        materials = db.get_materials()
         
-        if reagents:
-            reagent_options = {f"{r.name} ({r.supplier or 'Unknown supplier'})": r.id for r in reagents}
+        if materials:
+            material_options = {f"{m.name} ({m.material_type or 'Unknown type'})": m.id for m in materials}
             
-            with st.form("link_reagent_form"):
-                selected_reagent = st.selectbox("Select Reagent*", options=list(reagent_options.keys()))
-                reagent_id = reagent_options[selected_reagent]
+            with st.form("link_material_form"):
+                selected_material = st.selectbox("Select Material*", options=list(material_options.keys()))
+                material_id = material_options[selected_material]
                 
+                usage_context = st.text_input("Usage Context", help="e.g., IR window, OPO crystal, fiber delivery")
                 quantity_used = st.number_input("Quantity Used", min_value=0.0, format="%.4f")
-                unit = st.selectbox("Unit", ["mL", "µL", "L", "g", "mg", "µg", "mol", "mmol", "µmol", "units", ""])
+                unit = st.selectbox("Unit", ["m", "cm", "mm", "µm", "°", "W", "mJ", "unit", ""])
                 notes = st.text_area("Notes (optional)")
                 
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.form_submit_button("🔗 Link Reagent", type="primary"):
-                        if quantity_used > 0 or unit or notes:
-                            linked_reagent = db.link_reagent_to_entry(
-                                entry_id=entry.id,
-                                reagent_id=reagent_id,
-                                quantity_used=quantity_used if quantity_used > 0 else None,
-                                unit=unit if unit else None,
-                                notes=notes if notes else None
-                            )
-                            display_success(f"Reagent linked successfully!")
-                            st.rerun()
-                        else:
-                            display_error("Please provide at least quantity, unit, or notes")
+                    if st.form_submit_button("🔗 Link Material", type="primary"):
+                        link = db.link_material_to_entry(
+                            entry_id=entry.id,
+                            material_id=material_id,
+                            quantity_used=quantity_used if quantity_used > 0 else None,
+                            unit=unit if unit else None,
+                            usage_context=usage_context if usage_context else None,
+                            notes=notes if notes else None
+                        )
+                        display_success("Material linked successfully!")
+                        st.rerun()
                 
                 with col2:
                     if st.form_submit_button("❌ Cancel"):
                         st.rerun()
         else:
-            st.warning("No reagents available in inventory. Add reagents in the Lab Inventory section first.")
+            st.warning("No materials available in inventory. Add materials in the Physics Inventory section first.")
     else:
-        st.info("Please save the entry first before linking reagents")
+        st.info("Please save the entry first before linking materials")
 
 def render_entry_view(entry_id):
     """Render a read-only view of an entry"""

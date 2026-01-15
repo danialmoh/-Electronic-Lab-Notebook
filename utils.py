@@ -144,7 +144,9 @@ def get_experiment_statistics():
         projects_count = len(db.get_projects())
         experiments_count = len(db.get_experiments())
         entries_count = len(db.get_entries())
-        reagents_count = len(db.get_reagents())
+        materials_count = len(db.get_materials())
+        targets_count = len(db.get_targets())
+        instruments_count = len(db.get_instruments())
         protocols_count = len(db.get_current_protocols())
         
         # Recent activity
@@ -155,7 +157,9 @@ def get_experiment_statistics():
             'projects_count': projects_count,
             'experiments_count': experiments_count,
             'entries_count': entries_count,
-            'reagents_count': reagents_count,
+            'materials_count': materials_count,
+            'targets_count': targets_count,
+            'instruments_count': instruments_count,
             'protocols_count': protocols_count,
             'recent_experiments': recent_experiments,
             'recent_entries': recent_entries

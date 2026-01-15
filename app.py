@@ -83,9 +83,15 @@ def render_dashboard():
         st.metric("Entries", stats['entries_count'])
     
     with col4:
-        st.metric("Reagents", stats['reagents_count'])
+        st.metric("Materials", stats['materials_count'])
     
     with col5:
+        st.metric("Targets", stats['targets_count'])
+    
+    col6, col7 = st.columns(2)
+    with col6:
+        st.metric("Instruments", stats['instruments_count'])
+    with col7:
         st.metric("Protocols", stats['protocols_count'])
     
     st.markdown("---")
@@ -344,15 +350,16 @@ def render_entries():
                                 st.markdown("### Content")
                                 st.text(entry.content)
                         
-                        # Show linked reagents
-                        linked_reagents = db.get_linked_reagents(entry.id)
-                        if linked_reagents:
-                            st.markdown("### Linked Reagents")
-                            for link in linked_reagents:
-                                reagent = db.get_reagent(link.reagent_id)
-                                if reagent:
+                        # Show linked materials
+                        linked_materials = db.get_linked_materials(entry.id)
+                        if linked_materials:
+                            st.markdown("### Linked Materials")
+                            for link in linked_materials:
+                                material = db.get_material(link.material_id)
+                                if material:
+                                    usage = f" — {link.usage_context}" if link.usage_context else ""
                                     quantity_info = f" ({link.quantity_used} {link.unit})" if link.quantity_used else ""
-                                    st.markdown(f"- **{reagent.name}**{quantity_info}")
+                                    st.markdown(f"- **{material.name}**{usage}{quantity_info}")
                                     if link.notes:
                                         st.markdown(f"  *Note: {link.notes}*")
                     
@@ -393,204 +400,163 @@ def render_entries():
             st.info("No entries found. Create your first entry above!")
 
 def render_inventory():
-    st.title("🧫 Lab Inventory")
+    st.title("⚙️ Physics Inventory")
     
-    inventory_type = st.tabs(["🧪 Reagents", "🧬 Samples", "🔧 Equipment"])
+    inventory_tabs = st.tabs(["🧱 Materials", "🎯 Targets", "🛠️ Instruments"])
     
-    with inventory_type[0]:  # Reagents
-        render_reagents()
+    with inventory_tabs[0]:
+        render_materials()
     
-    with inventory_type[1]:  # Samples
-        render_samples()
+    with inventory_tabs[1]:
+        render_targets()
     
-    with inventory_type[2]:  # Equipment
-        render_equipment()
+    with inventory_tabs[2]:
+        render_instruments()
 
-def render_reagents():
+def render_materials():
     with DatabaseManager() as db:
-        reagents = db.get_reagents()
+        materials = db.get_materials()
         
-        # Create new reagent
-        with st.expander("➕ Add New Reagent"):
-            with st.form("new_reagent"):
-                name = st.text_input("Reagent Name*")
+        with st.expander("➕ Add New Material"):
+            with st.form("new_material"):
+                name = st.text_input("Material Name*")
                 description = st.text_area("Description")
-                catalog_number = st.text_input("Catalog Number")
-                supplier = st.text_input("Supplier")
-                concentration = st.number_input("Concentration", min_value=0.0, format="%.2f")
-                unit = st.selectbox("Unit", ["M", "mM", "µM", "mg/mL", "µg/mL", "g/L", "mg", "g", "mL", "L"])
+                material_type = st.selectbox("Material Type", ["Crystal", "Optic", "Fiber", "Gas", "Other"])
+                vendor = st.text_input("Vendor")
+                part_number = st.text_input("Part Number")
+                wavelength_range = st.text_input("Wavelength Range", help="e.g., 200-2000 nm")
+                damage_threshold = st.number_input("Damage Threshold", min_value=0.0, format="%.2f")
+                threshold_unit = st.selectbox("Threshold Unit", ["J/cm^2", "GW/cm^2", "mJ/cm^2", "W/cm^2"])
                 storage_location = st.text_input("Storage Location")
-                safety_info = st.text_area("Safety Information")
+                handling_notes = st.text_area("Handling Notes / Safety")
                 
-                if st.form_submit_button("Add Reagent"):
-                    reagent = db.create_reagent(
+                if st.form_submit_button("Add Material"):
+                    material = db.create_material(
                         name=name,
                         description=description,
-                        catalog_number=catalog_number,
-                        supplier=supplier,
-                        concentration=concentration if concentration > 0 else None,
-                        unit=unit,
+                        material_type=material_type,
+                        vendor=vendor,
+                        part_number=part_number,
+                        wavelength_range=wavelength_range,
+                        damage_threshold=damage_threshold if damage_threshold > 0 else None,
+                        unit=threshold_unit,
                         storage_location=storage_location,
-                        safety_info=safety_info
+                        handling_notes=handling_notes
                     )
-                    display_success(f"Reagent '{reagent.name}' added successfully!")
+                    display_success(f"Material '{material.name}' added successfully!")
                     st.rerun()
         
-        # Display reagents
-        if reagents:
-            st.subheader(f"Reagents ({len(reagents)})")
-            
-            for reagent in reagents:
-                with st.expander(f"🧪 {reagent.name}"):
+        if materials:
+            st.subheader(f"Materials ({len(materials)})")
+            for material in materials:
+                with st.expander(f"🧱 {material.name}"):
                     col1, col2 = st.columns([3, 1])
-                    
                     with col1:
-                        st.markdown(f"**Description:** {reagent.description or 'No description'}")
-                        if reagent.catalog_number:
-                            st.markdown(f"**Catalog #:** {reagent.catalog_number}")
-                        if reagent.supplier:
-                            st.markdown(f"**Supplier:** {reagent.supplier}")
-                        if reagent.concentration:
-                            st.markdown(f"**Concentration:** {reagent.concentration} {reagent.unit}")
-                        if reagent.storage_location:
-                            st.markdown(f"**Storage:** {reagent.storage_location}")
-                        if reagent.safety_info:
-                            st.markdown(f"**Safety:** {reagent.safety_info}")
-                        st.markdown(f"**Updated:** {format_datetime(reagent.updated_at)}")
-                    
+                        st.markdown(f"**Type:** {material.material_type or '—'}")
+                        st.markdown(f"**Vendor:** {material.vendor or '—'}")
+                        st.markdown(f"**Part #:** {material.part_number or '—'}")
+                        st.markdown(f"**Range:** {material.wavelength_range or '—'}")
+                        if material.damage_threshold:
+                            st.markdown(f"**Damage Threshold:** {material.damage_threshold} {material.unit}")
+                        st.markdown(f"**Storage:** {material.storage_location or '—'}")
+                        st.markdown(f"**Notes:** {material.handling_notes or '—'}")
                     with col2:
-                        if st.button("✏️ Edit", key=f"edit_reagent_{reagent.id}"):
-                            st.session_state.edit_reagent = reagent.id
-                            st.rerun()
-                        
-                        if st.button("🗑️ Delete", key=f"del_reagent_{reagent.id}"):
-                            if db.delete_reagent(reagent.id):
-                                display_success("Reagent deleted successfully!")
+                        st.markdown(f"**Updated:** {format_datetime(material.updated_at)}")
+                        if st.button("🗑️ Delete", key=f"del_material_{material.id}"):
+                            if db.delete_material(material.id):
+                                display_success("Material deleted")
                                 st.rerun()
         else:
-            st.info("No reagents found. Add your first reagent above!")
+            st.info("No materials logged yet.")
 
-def render_samples():
+def render_targets():
     with DatabaseManager() as db:
-        samples = db.get_samples()
+        targets = db.get_targets()
         
-        # Create new sample
-        with st.expander("➕ Add New Sample"):
-            with st.form("new_sample"):
-                name = st.text_input("Sample Name*")
-                description = st.text_area("Description")
-                sample_type = st.text_input("Sample Type")
-                storage_location = st.text_input("Storage Location")
-                quantity = st.number_input("Quantity", min_value=0.0, format="%.2f")
-                unit = st.selectbox("Unit", ["mg", "g", "µg", "mL", "L", "µL", "units"])
+        with st.expander("➕ Add New Target/Source"):
+            with st.form("new_target"):
+                name = st.text_input("Target Name*")
+                composition = st.text_area("Composition / Description")
+                target_type = st.selectbox("Target Type", ["Supersonic Jet", "Gas Cell", "Molecular Beam", "Thin Film", "Other"])
+                backing_gas = st.text_input("Backing Gas / Carrier")
+                stagnation_pressure = st.number_input("Stagnation Pressure", min_value=0.0, format="%.3f")
+                pressure_unit = st.selectbox("Pressure Unit", ["bar", "Torr", "mbar"])
+                temperature = st.number_input("Temperature (K)", min_value=0.0, format="%.1f")
+                storage_location = st.text_input("Location")
                 
-                if st.form_submit_button("Add Sample"):
-                    sample = db.create_sample(
+                if st.form_submit_button("Add Target"):
+                    target = db.create_target(
                         name=name,
-                        description=description,
-                        sample_type=sample_type,
-                        storage_location=storage_location,
-                        quantity=quantity if quantity > 0 else None,
-                        unit=unit
+                        composition=composition,
+                        target_type=target_type,
+                        backing_gas=backing_gas,
+                        stagnation_pressure=stagnation_pressure if stagnation_pressure > 0 else None,
+                        stagnation_pressure_unit=pressure_unit,
+                        temperature=temperature if temperature > 0 else None,
+                        storage_location=storage_location
                     )
-                    display_success(f"Sample '{sample.name}' added successfully!")
+                    display_success(f"Target '{target.name}' added successfully!")
                     st.rerun()
         
-        # Display samples
-        if samples:
-            st.subheader(f"Samples ({len(samples)})")
-            
-            for sample in samples:
-                with st.expander(f"🧬 {sample.name}"):
-                    col1, col2 = st.columns([3, 1])
-                    
-                    with col1:
-                        st.markdown(f"**Description:** {sample.description or 'No description'}")
-                        if sample.sample_type:
-                            st.markdown(f"**Type:** {sample.sample_type}")
-                        if sample.storage_location:
-                            st.markdown(f"**Storage:** {sample.storage_location}")
-                        if sample.quantity:
-                            st.markdown(f"**Quantity:** {sample.quantity} {sample.unit}")
-                        st.markdown(f"**Updated:** {format_datetime(sample.updated_at)}")
-                    
-                    with col2:
-                        if st.button("✏️ Edit", key=f"edit_sample_{sample.id}"):
-                            st.session_state.edit_sample = sample.id
-                            st.rerun()
-                        
-                        if st.button("🗑️ Delete", key=f"del_sample_{sample.id}"):
-                            db.session.delete(sample)
-                            db.session.commit()
-                            display_success("Sample deleted successfully!")
-                            st.rerun()
+        if targets:
+            st.subheader(f"Targets ({len(targets)})")
+            for target in targets:
+                with st.expander(f"🎯 {target.name}"):
+                    st.markdown(f"**Type:** {target.target_type or '—'}")
+                    st.markdown(f"**Composition:** {target.composition or '—'}")
+                    st.markdown(f"**Backing Gas:** {target.backing_gas or '—'}")
+                    if target.stagnation_pressure:
+                        st.markdown(f"**Pressure:** {target.stagnation_pressure} {target.stagnation_pressure_unit}")
+                    if target.temperature:
+                        st.markdown(f"**Temperature:** {target.temperature} K")
+                    st.markdown(f"**Location:** {target.storage_location or '—'}")
+                    st.markdown(f"**Updated:** {format_datetime(target.updated_at)}")
         else:
-            st.info("No samples found. Add your first sample above!")
+            st.info("No targets defined yet.")
 
-def render_equipment():
+def render_instruments():
     with DatabaseManager() as db:
-        equipment_list = db.get_equipment()
+        instruments = db.get_instruments()
         
-        # Create new equipment
-        with st.expander("➕ Add New Equipment"):
-            with st.form("new_equipment"):
-                name = st.text_input("Equipment Name*")
+        with st.expander("➕ Add New Instrument"):
+            with st.form("new_instrument"):
+                name = st.text_input("Instrument Name*")
                 model = st.text_input("Model")
                 serial_number = st.text_input("Serial Number")
                 location = st.text_input("Location")
                 status = st.selectbox("Status", ["Available", "In Use", "Maintenance"])
+                beamline_position = st.text_input("Beamline Position")
+                control_software = st.text_input("Control Software")
                 last_maintenance = st.date_input("Last Maintenance", datetime.now() - timedelta(days=30))
                 
-                if st.form_submit_button("Add Equipment"):
-                    equipment = db.create_equipment(
+                if st.form_submit_button("Add Instrument"):
+                    instrument = db.create_instrument(
                         name=name,
                         model=model,
                         serial_number=serial_number,
                         location=location,
                         status=status,
-                        last_maintenance=datetime.combine(last_maintenance, datetime.min.time())
+                        last_maintenance=datetime.combine(last_maintenance, datetime.min.time()),
+                        beamline_position=beamline_position,
+                        control_software=control_software
                     )
-                    display_success(f"Equipment '{equipment.name}' added successfully!")
+                    display_success(f"Instrument '{instrument.name}' added successfully!")
                     st.rerun()
         
-        # Display equipment
-        if equipment_list:
-            st.subheader(f"Equipment ({len(equipment_list)})")
-            
-            for equipment in equipment_list:
-                status_color = {
-                    'Available': 'green',
-                    'In Use': 'orange', 
-                    'Maintenance': 'red'
-                }.get(equipment.status, 'gray')
-                
-                with st.expander(f"🔧 {equipment.name}"):
-                    col1, col2 = st.columns([3, 1])
-                    
-                    with col1:
-                        st.markdown(f"**Status:** <span style='color: {status_color}'>{equipment.status}</span>", unsafe_allow_html=True)
-                        if equipment.model:
-                            st.markdown(f"**Model:** {equipment.model}")
-                        if equipment.serial_number:
-                            st.markdown(f"**Serial #:** {equipment.serial_number}")
-                        if equipment.location:
-                            st.markdown(f"**Location:** {equipment.location}")
-                        if equipment.last_maintenance:
-                            st.markdown(f"**Last Maintenance:** {format_date(equipment.last_maintenance)}")
-                        st.markdown(f"**Updated:** {format_datetime(equipment.updated_at)}")
-                    
-                    with col2:
-                        if st.button("✏️ Edit", key=f"edit_equipment_{equipment.id}"):
-                            st.session_state.edit_equipment = equipment.id
-                            st.rerun()
-                        
-                        if st.button("🗑️ Delete", key=f"del_equipment_{equipment.id}"):
-                            db.session.delete(equipment)
-                            db.session.commit()
-                            display_success("Equipment deleted successfully!")
-                            st.rerun()
+        if instruments:
+            st.subheader(f"Instruments ({len(instruments)})")
+            for instrument in instruments:
+                with st.expander(f"🛠️ {instrument.name}"):
+                    st.markdown(f"**Status:** {instrument.status}")
+                    st.markdown(f"**Model:** {instrument.model or '—'}")
+                    st.markdown(f"**Serial #:** {instrument.serial_number or '—'}")
+                    st.markdown(f"**Location:** {instrument.location or '—'}")
+                    if instrument.last_maintenance:
+                        st.markdown(f"**Last Maintenance:** {format_date(instrument.last_maintenance)}")
+                    st.markdown(f"**Beamline Position:** {instrument.beamline_position or '—'}")
+                    st.markdown(f"**Control Software:** {instrument.control_software or '—'}")
         else:
-            st.info("No equipment found. Add your first equipment above!")
+            st.info("No instruments logged yet.")
 
 def render_protocols():
     render_protocol_manager()
@@ -704,9 +670,9 @@ def render_settings():
         projects_count = len(db.get_projects())
         experiments_count = len(db.get_experiments())
         entries_count = len(db.get_entries())
-        reagents_count = len(db.get_reagents())
-        samples_count = len(db.get_samples())
-        equipment_count = len(db.get_equipment())
+        materials_count = len(db.get_materials())
+        targets_count = len(db.get_targets())
+        instruments_count = len(db.get_instruments())
         protocols_count = len(db.get_protocols())
         
         col1, col2 = st.columns(2)
@@ -715,13 +681,13 @@ def render_settings():
             st.metric("Projects", projects_count)
             st.metric("Experiments", experiments_count)
             st.metric("Entries", entries_count)
-            st.metric("Reagents", reagents_count)
+            st.metric("Materials", materials_count)
+            st.metric("Targets", targets_count)
         
         with col2:
-            st.metric("Samples", samples_count)
-            st.metric("Equipment", equipment_count)
+            st.metric("Instruments", instruments_count)
             st.metric("Protocols", protocols_count)
-            st.metric("Total Items", projects_count + experiments_count + entries_count + reagents_count + samples_count + equipment_count + protocols_count)
+            st.metric("Total Items", projects_count + experiments_count + entries_count + materials_count + targets_count + instruments_count + protocols_count)
     
     st.markdown("---")
     
