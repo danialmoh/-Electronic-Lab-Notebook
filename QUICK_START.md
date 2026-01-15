@@ -32,15 +32,15 @@ Once the app starts, you'll see:
   - 2 research projects
   - 3 experiments with different statuses
   - Multiple entries with Markdown/LaTeX content
-  - 3 reagents, 2 samples, 3 equipment items
+  - 3 materials, 2 targets, 3 instruments
   - 2 protocols with versioning examples
 
 ## 🎯 Try These Features
 
 1. **Create an Entry**
    - Go to Entries → Create New Entry
-   - Use Markdown with LaTeX: `$E = mc^2$`
-   - Link reagents from inventory
+   - Use Markdown with LaTeX: `$E = mc^2`
+   - Link materials from inventory
    - Attach files
 
 2. **Protocol Versioning**

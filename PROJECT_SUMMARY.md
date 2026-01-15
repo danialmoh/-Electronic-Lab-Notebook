@@ -20,9 +20,9 @@ A professional-grade Electronic Lab Notebook built with Streamlit and SQLAlchemy
 - Content versioning through audit trail
 
 ### 3. **Relational Inventory System** ✅
-- **Reagents**: Chemical inventory with supplier info
-- **Samples**: Sample tracking and storage management  
-- **Equipment**: Equipment status and maintenance logs
+- **Materials**: Optics, crystals, gases, fibers with supplier info
+- **Targets**: Jet sources, thin films, and other prepared targets
+- **Instruments**: Lasers, detectors, vacuum hardware with maintenance logs
 - **Smart Linking**: Dropdown selection in experiment entries
 - Quantity tracking and usage notes
 
@@ -84,10 +84,10 @@ eln/
 - **audit_logs**: Complete change history
 
 ### Inventory Tables
-- **reagents**: Chemical inventory with supplier info
-- **samples**: Sample tracking and storage
-- **equipment**: Equipment management
-- **linked_reagents**: Junction table for reagent usage
+- **materials**: Physics components with supplier info
+- **targets**: Experimental targets and preparation data
+- **instruments**: Instrumentation records and maintenance status
+- **linked_materials**: Junction table for material usage
 
 ### Protocol Tables
 - **protocols**: Version-controlled SOPs
@@ -151,10 +151,10 @@ The initialization script creates comprehensive sample data including:
 - 2 research projects
 - 3 experiments with different statuses
 - Multiple entries with Markdown and LaTeX content
-- 3 reagents with supplier information
-- 2 samples and 3 equipment items
+- 3 materials with supplier information
+- 2 targets and 3 instruments
 - 2 protocols with versioning
-- Linked reagents demonstrating the inventory integration
+- Linked materials demonstrating the inventory integration
 
 ## 🎨 User Experience
 
@@ -227,7 +227,7 @@ The initialization script creates comprehensive sample data including:
 1. Navigate to **Experiments** → select or create experiment
 2. Click **"Create Entry with Advanced Editor"**
 3. Add title and content using Markdown with LaTeX
-4. Link reagents from inventory using dropdown
+4. Link materials from inventory using dropdown
 5. Attach files (images, PDFs, etc.)
 6. Save and optionally lock with digital signature
 
@@ -240,9 +240,9 @@ The initialization script creates comprehensive sample data including:
 
 ### Inventory Management
 1. Navigate to **Lab Inventory**
-2. Add reagents, samples, or equipment
+2. Add materials, targets, or instruments
 3. Include supplier info and storage details
-4. Link reagents to experiment entries
+4. Link materials to experiment entries
 5. Track usage and maintain records
 
 ## 🎯 Success Metrics

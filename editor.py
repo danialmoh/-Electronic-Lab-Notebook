@@ -5,7 +5,7 @@ from database import DatabaseManager
 from models import Attachment
 from utils import render_markdown_with_latex, save_uploaded_file, display_success, display_error, display_warning
 
-def render_entry_editor(entry_id=None, experiment_id=None):
+def render_entry_editor(entry_id=None, experiment_id=None, form_key="entry_form"):
     """Render the advanced entry editor with Markdown/LaTeX support and material linking"""
     
     with DatabaseManager() as db:
@@ -42,7 +42,7 @@ def render_entry_editor(entry_id=None, experiment_id=None):
         )
         
         with editor_tab:
-            render_edit_form(entry, experiment, db)
+            render_edit_form(entry, experiment, db, form_key=form_key)
         
         with preview_tab:
             render_preview(entry, db)
@@ -259,35 +259,37 @@ def render_linked_materials(entry, experiment, db):
             
             for link in linked_materials:
                 material = db.get_material(link.material_id)
-                if material:
-                    with st.expander(f"🧱 {material.name}"):
-                        col1, col2 = st.columns([3, 1])
-                        
-                        with col1:
-                            st.markdown(f"**Material:** {material.name}")
-                            if material.material_type:
-                                st.markdown(f"**Type:** {material.material_type}")
-                            if material.vendor:
-                                st.markdown(f"**Vendor:** {material.vendor}")
-                            if material.part_number:
-                                st.markdown(f"**Part #:** {material.part_number}")
-                            if link.usage_context:
-                                st.markdown(f"**Usage:** {link.usage_context}")
-                            if link.quantity_used:
-                                st.markdown(f"**Quantity Used:** {link.quantity_used} {link.unit or 'units'}")
-                            if link.notes:
-                                st.markdown(f"**Notes:** {link.notes}")
-                            st.markdown(f"**Linked:** {link.linked_at.strftime('%Y-%m-%d %H:%M')}")
-                        
-                        with col2:
-                            if st.button("🗑️ Remove", key=f"remove_material_{link.id}"):
-                                if db.remove_linked_material(link.id):
-                                    display_success("Material link removed")
-                                    st.rerun()
-                                else:
-                                    display_error("Failed to remove material link")
+                if not material:
+                    continue
                 
-                st.markdown("---")
+                with st.container(border=True):
+                    st.markdown(f"#### 🧱 {material.name}")
+                    col1, col2 = st.columns([3, 1])
+                    
+                    with col1:
+                        if material.material_type:
+                            st.markdown(f"**Type:** {material.material_type}")
+                        if material.vendor:
+                            st.markdown(f"**Vendor:** {material.vendor}")
+                        if material.part_number:
+                            st.markdown(f"**Part #:** {material.part_number}")
+                        if link.usage_context:
+                            st.markdown(f"**Usage:** {link.usage_context}")
+                        if link.quantity_used:
+                            st.markdown(f"**Quantity Used:** {link.quantity_used} {link.unit or 'units'}")
+                        if link.notes:
+                            st.markdown(f"**Notes:** {link.notes}")
+                        st.markdown(f"**Linked:** {link.linked_at.strftime('%Y-%m-%d %H:%M')}")
+                    
+                    with col2:
+                        if st.button("🗑️ Remove", key=f"remove_material_{link.id}"):
+                            if db.remove_linked_material(link.id):
+                                display_success("Material link removed")
+                                st.rerun()
+                            else:
+                                display_error("Failed to remove material link")
+                
+                st.markdown("")
         else:
             st.info("No materials linked to this entry")
         
@@ -368,7 +370,9 @@ def render_entry_view(entry_id):
         st.markdown("---")
         
         # Content tabs
-        content_tab, attachments_tab, reagents_tab, audit_tab = st.tabs(["📄 Content", "📎 Attachments", "🧪 Reagents", "📋 Audit Trail"])
+        content_tab, attachments_tab, materials_tab, audit_tab = st.tabs(
+            ["📄 Content", "📎 Attachments", "🧱 Linked Materials", "📋 Audit Trail"]
+        )
         
         with content_tab:
             if entry.content:
@@ -383,8 +387,8 @@ def render_entry_view(entry_id):
         with attachments_tab:
             render_attachments(entry, db)
         
-        with reagents_tab:
-            render_linked_reagents(entry, experiment, db)
+        with materials_tab:
+            render_linked_materials(entry, experiment, db)
         
         with audit_tab:
             render_audit_trail(entry, db)

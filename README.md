@@ -7,16 +7,16 @@ A professional-grade Electronic Lab Notebook built with Streamlit and SQLAlchemy
 ### Core Functionality
 - **Hierarchical Data Structure**: Projects > Experiments > Entries
 - **Advanced Entry Editor**: Markdown support with LaTeX rendering
-- **Relational Inventory System**: Track reagents, samples, and equipment with linking
+- **Physics-Focused Inventory System**: Track materials, targets, and instruments with usage linking
 - **Protocol Versioning**: SOP management with version control
 - **Security & Compliance**: Digital signatures and audit trails
 - **Search & Export**: Full-text search and PDF/CSV export
 
 ### Database Schema
 - **Projects**: Top-level organization
-- **Experiments**: Individual experiments with metadata (status, tags, dates)
+- **Experiments**: Individual experiments with metadata (status, tags, dates, wavelength range, pulse energy, repetition rate, vacuum level, sample temperature, instrument configuration)
 - **Entries**: Detailed experiment notes with Markdown/LaTeX support
-- **Inventory**: Reagents, samples, and equipment tracking
+- **Inventory**: Materials, targets, and instruments tracking
 - **Protocols**: Version-controlled standard operating procedures
 - **Audit Trail**: Complete log of all changes and signatures
 
@@ -87,15 +87,15 @@ eln/
 - **Rich Text Editor**: Markdown with LaTeX support
 - **Preview Mode**: Rendered view of content
 - **File Attachments**: Upload images and documents
-- **Reagent Linking**: Connect inventory items to experiments
+- **Material Linking**: Connect materials to experiments with contextual usage
 - **Digital Signatures**: Lock entries with confirmation
 - **Audit Trail**: Complete change history
 
 ### Inventory
-- **Reagents**: Chemical inventory with supplier info
-- **Samples**: Sample tracking and storage
-- **Equipment**: Equipment status and maintenance logs
-- **Smart Linking**: Dropdown selection in experiment entries
+- **Materials**: Optics, crystals, gases, fibers, and other components with vendor details
+- **Targets**: Supersonic jets, thin films, and other experimental targets with preparation metadata
+- **Instruments**: Lasers, detectors, vacuum hardware with status tracking
+- **Smart Linking**: Dropdown selection in entries for consistent usage tracking
 
 ### Protocols
 - **Version Control**: Automatic versioning on updates

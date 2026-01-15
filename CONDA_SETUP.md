@@ -130,7 +130,7 @@ Once the application is running:
 2. **Create a Project** - Start organizing your research
 3. **Add Experiments** - Create experiments within projects
 4. **Write Entries** - Use the advanced editor with Markdown/LaTeX
-5. **Manage Inventory** - Add reagents, samples, and equipment
+5. **Manage Inventory** - Add materials, targets, and instruments
 6. **Create Protocols** - Document your SOPs with versioning
 
 ## Environment Details

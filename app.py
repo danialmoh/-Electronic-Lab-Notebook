@@ -295,31 +295,57 @@ def render_entries():
             entries = db.get_entries(experiment_filter)
         
         # Create new entry
-        with st.expander("➕ Create New Entry"):
-            with st.form("new_entry_form"):
-                title = st.text_input("Entry Title*")
-                
-                if experiments:
-                    exp_options = {f"{exp.title} (ID: {exp.id})": exp.id for exp in experiments}
-                    selected_experiment = st.selectbox("Experiment*", options=list(exp_options.keys()))
-                    experiment_id = exp_options[selected_experiment]
-                else:
-                    st.warning("Please create an experiment first!")
-                    experiment_id = None
-                
-                content_type = st.selectbox("Content Type", ["markdown", "plain"])
-                
-                if st.form_submit_button("📝 Create Entry with Advanced Editor") and experiment_id:
-                    st.session_state.new_entry = experiment_id
+        if not st.session_state.get('new_entry'):
+            with st.expander("➕ Create New Entry"):
+                with st.form("new_entry_form"):
+                    title = st.text_input("Entry Title*")
+                    
+                    if experiments:
+                        exp_options = {f"{exp.title} (ID: {exp.id})": exp.id for exp in experiments}
+                        selected_experiment = st.selectbox("Experiment*", options=list(exp_options.keys()))
+                        experiment_id = exp_options[selected_experiment]
+                    else:
+                        st.warning("Please create an experiment first!")
+                        experiment_id = None
+                    
+                    content_type = st.selectbox("Content Type", ["markdown", "plain"])
+                    
+                    if st.form_submit_button("📝 Create Entry with Advanced Editor") and experiment_id:
+                        st.session_state.new_entry = experiment_id
+                        st.session_state.new_entry_form_title = title
+                        st.session_state.new_entry_content_type = content_type
+                        st.rerun()
+                    
+                    if st.form_submit_button("Create Simple Entry") and experiment_id:
+                        entry = db.create_entry(
+                            experiment_id=experiment_id,
+                            title=title,
+                            content_type=content_type
+                        )
+                        display_success(f"Entry '{entry.title}' created successfully!")
+                        st.rerun()
+        else:
+            st.info("Using advanced editor below. Finish or cancel to re-open quick create form.")
+        
+        if st.session_state.get('new_entry'):
+            st.markdown("### 📝 Advanced Entry Editor")
+            render_entry_editor(
+                experiment_id=st.session_state.new_entry,
+                form_key=f"inline_new_entry_{st.session_state.new_entry}"
+            )
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("✅ Done Creating", type="primary"):
+                    st.session_state.new_entry = None
+                    st.session_state.pop('new_entry_form_title', None)
+                    st.session_state.pop('new_entry_content_type', None)
                     st.rerun()
-                
-                if st.form_submit_button("Create Simple Entry") and experiment_id:
-                    entry = db.create_entry(
-                        experiment_id=experiment_id,
-                        title=title,
-                        content_type=content_type
-                    )
-                    display_success(f"Entry '{entry.title}' created successfully!")
+            with col2:
+                if st.button("❌ Cancel Creation"):
+                    st.session_state.pop('new_entry', None)
+                    st.session_state.pop('new_entry_form_title', None)
+                    st.session_state.pop('new_entry_content_type', None)
                     st.rerun()
         
         # Display entries
@@ -726,7 +752,7 @@ def render_settings():
     **Features:**
     - Hierarchical organization (Projects > Experiments > Entries)
     - Rich text editing with Markdown and LaTeX support
-    - Inventory management with reagent linking
+    - Inventory management with materials, targets, and instruments
     - Protocol versioning
     - Digital signatures and audit trails
     - Search and export functionality
@@ -786,39 +812,39 @@ def handle_modals():
     
     # Entry editor modal
     if 'edit_entry' in st.session_state and st.session_state.edit_entry:
-        with st.modal("✏️ Edit Entry"):
-            render_entry_editor(entry_id=st.session_state.edit_entry)
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("💾 Save Changes", type="primary"):
-                    st.session_state.edit_entry = None
-                    st.rerun()
-            
-            with col2:
-                if st.button("❌ Cancel"):
-                    del st.session_state.edit_entry
-                    st.rerun()
+        st.markdown("### ✏️ Edit Entry")
+        render_entry_editor(entry_id=st.session_state.edit_entry, form_key=f"edit_entry_{st.session_state.edit_entry}")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ Done Editing", type="primary"):
+                st.session_state.edit_entry = None
+                st.rerun()
+        
+        with col2:
+            if st.button("❌ Cancel Edit"):
+                del st.session_state.edit_entry
+                st.rerun()
     
     # New entry editor modal
     if 'new_entry' in st.session_state and st.session_state.new_entry:
-        with st.modal("📝 Create New Entry"):
-            render_entry_editor(experiment_id=st.session_state.new_entry)
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("💾 Create Entry", type="primary"):
-                    st.session_state.new_entry = None
-                    st.rerun()
-            
-            with col2:
-                if st.button("❌ Cancel"):
-                    del st.session_state.new_entry
-                    st.rerun()
+        st.markdown("### 📝 Create Advanced Entry")
+        render_entry_editor(experiment_id=st.session_state.new_entry, form_key=f"new_entry_{st.session_state.new_entry}")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ Done Creating", type="primary"):
+                st.session_state.new_entry = None
+                st.rerun()
+        
+        with col2:
+            if st.button("❌ Cancel Creation"):
+                del st.session_state.new_entry
+                st.rerun()
     
     # Entry view modal
     if 'view_entry' in st.session_state and st.session_state.view_entry:
-        with st.modal("📄 View Entry"):
+        with st.expander("📄 View Entry", expanded=True):
             render_entry_view(st.session_state.view_entry)
             
             if st.button("❌ Close"):
@@ -827,7 +853,7 @@ def handle_modals():
     
     # Entry locking modal
     if 'lock_entry' in st.session_state and st.session_state.lock_entry:
-        with st.modal("🔒 Lock Entry"):
+        with st.expander("🔒 Lock Entry", expanded=True):
             st.warning("Locking an entry will prevent further edits. This action requires a digital signature.")
             
             with DatabaseManager() as db:
@@ -859,7 +885,7 @@ def handle_modals():
     
     # Entry unlocking modal
     if 'unlock_entry' in st.session_state and st.session_state.unlock_entry:
-        with st.modal("🔓 Unlock Entry"):
+        with st.expander("🔓 Unlock Entry", expanded=True):
             st.warning("Unlocking an entry requires the same digital signature used to lock it.")
             
             with DatabaseManager() as db:
