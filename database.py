@@ -1,5 +1,17 @@
 from sqlalchemy.orm import Session
-from models import get_session, Project, Experiment, Entry, Reagent, Sample, Equipment, Protocol, LinkedReagent, Attachment, AuditLog
+from models import (
+    get_session,
+    Project,
+    Experiment,
+    Entry,
+    Material,
+    Target,
+    Instrument,
+    Protocol,
+    LinkedMaterial,
+    Attachment,
+    AuditLog,
+)
 from datetime import datetime
 from typing import List, Optional
 
@@ -158,53 +170,53 @@ class DatabaseManager:
         return False
     
     # Inventory operations
-    def create_reagent(self, name: str, **kwargs) -> Reagent:
-        reagent = Reagent(name=name, **kwargs)
-        self.session.add(reagent)
+    def create_material(self, name: str, **kwargs) -> Material:
+        material = Material(name=name, **kwargs)
+        self.session.add(material)
         self.session.commit()
-        return reagent
+        return material
     
-    def get_reagents(self) -> List[Reagent]:
-        return self.session.query(Reagent).order_by(Reagent.name).all()
+    def get_materials(self) -> List[Material]:
+        return self.session.query(Material).order_by(Material.name).all()
     
-    def get_reagent(self, reagent_id: int) -> Optional[Reagent]:
-        return self.session.query(Reagent).filter(Reagent.id == reagent_id).first()
+    def get_material(self, material_id: int) -> Optional[Material]:
+        return self.session.query(Material).filter(Material.id == material_id).first()
     
-    def update_reagent(self, reagent_id: int, **kwargs) -> Optional[Reagent]:
-        reagent = self.get_reagent(reagent_id)
-        if reagent:
+    def update_material(self, material_id: int, **kwargs) -> Optional[Material]:
+        material = self.get_material(material_id)
+        if material:
             for key, value in kwargs.items():
-                if hasattr(reagent, key):
-                    setattr(reagent, key, value)
-            reagent.updated_at = datetime.utcnow()
+                if hasattr(material, key):
+                    setattr(material, key, value)
+            material.updated_at = datetime.utcnow()
             self.session.commit()
-        return reagent
+        return material
     
-    def delete_reagent(self, reagent_id: int) -> bool:
-        reagent = self.get_reagent(reagent_id)
-        if reagent:
-            self.session.delete(reagent)
+    def delete_material(self, material_id: int) -> bool:
+        material = self.get_material(material_id)
+        if material:
+            self.session.delete(material)
             self.session.commit()
             return True
         return False
     
-    def create_sample(self, name: str, **kwargs) -> Sample:
-        sample = Sample(name=name, **kwargs)
-        self.session.add(sample)
+    def create_target(self, name: str, **kwargs) -> Target:
+        target = Target(name=name, **kwargs)
+        self.session.add(target)
         self.session.commit()
-        return sample
+        return target
     
-    def get_samples(self) -> List[Sample]:
-        return self.session.query(Sample).order_by(Sample.name).all()
+    def get_targets(self) -> List[Target]:
+        return self.session.query(Target).order_by(Target.name).all()
     
-    def create_equipment(self, name: str, **kwargs) -> Equipment:
-        equipment = Equipment(name=name, **kwargs)
-        self.session.add(equipment)
+    def create_instrument(self, name: str, **kwargs) -> Instrument:
+        instrument = Instrument(name=name, **kwargs)
+        self.session.add(instrument)
         self.session.commit()
-        return equipment
+        return instrument
     
-    def get_equipment(self) -> List[Equipment]:
-        return self.session.query(Equipment).order_by(Equipment.name).all()
+    def get_instruments(self) -> List[Instrument]:
+        return self.session.query(Instrument).order_by(Instrument.name).all()
     
     # Protocol operations
     def create_protocol(self, name: str, content: str, description: str = None, 
@@ -246,27 +258,28 @@ class DatabaseManager:
             return new_version
         return None
     
-    # Linked reagents operations
-    def link_reagent_to_entry(self, entry_id: int, reagent_id: int, quantity_used: float = None, 
-                             unit: str = None, notes: str = None) -> LinkedReagent:
-        linked_reagent = LinkedReagent(
+    # Linked materials operations
+    def link_material_to_entry(self, entry_id: int, material_id: int, quantity_used: float = None, 
+                              unit: str = None, usage_context: str = None, notes: str = None) -> LinkedMaterial:
+        linked_material = LinkedMaterial(
             entry_id=entry_id,
-            reagent_id=reagent_id,
+            material_id=material_id,
             quantity_used=quantity_used,
             unit=unit,
+            usage_context=usage_context,
             notes=notes
         )
-        self.session.add(linked_reagent)
+        self.session.add(linked_material)
         self.session.commit()
-        return linked_reagent
+        return linked_material
     
-    def get_linked_reagents(self, entry_id: int) -> List[LinkedReagent]:
-        return self.session.query(LinkedReagent).filter(LinkedReagent.entry_id == entry_id).all()
+    def get_linked_materials(self, entry_id: int) -> List[LinkedMaterial]:
+        return self.session.query(LinkedMaterial).filter(LinkedMaterial.entry_id == entry_id).all()
     
-    def remove_linked_reagent(self, linked_reagent_id: int) -> bool:
-        linked_reagent = self.session.query(LinkedReagent).filter(LinkedReagent.id == linked_reagent_id).first()
-        if linked_reagent:
-            self.session.delete(linked_reagent)
+    def remove_linked_material(self, linked_material_id: int) -> bool:
+        linked_material = self.session.query(LinkedMaterial).filter(LinkedMaterial.id == linked_material_id).first()
+        if linked_material:
+            self.session.delete(linked_material)
             self.session.commit()
             return True
         return False

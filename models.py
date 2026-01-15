@@ -33,6 +33,13 @@ class Experiment(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     experiment_date = Column(DateTime)
     tags = Column(String(500))  # Comma-separated tags
+    wavelength_range = Column(String(100))  # e.g., "760-820 nm"
+    pulse_energy = Column(Float)
+    pulse_energy_unit = Column(String(20), default='mJ')
+    repetition_rate = Column(Float)  # Hz or kHz
+    vacuum_level = Column(Float)  # mbar
+    sample_temperature = Column(Float)  # Kelvin
+    instrument_config = Column(Text)
     
     # Relationships
     project = relationship("Project", back_populates="experiments")
@@ -60,7 +67,7 @@ class Entry(Base):
     # Relationships
     experiment = relationship("Experiment", back_populates="entries")
     attachments = relationship("Attachment", back_populates="entry", cascade="all, delete-orphan")
-    linked_reagents = relationship("LinkedReagent", back_populates="entry", cascade="all, delete-orphan")
+    linked_materials = relationship("LinkedMaterial", back_populates="entry", cascade="all, delete-orphan")
     audit_logs = relationship("AuditLog", back_populates="entry", cascade="all, delete-orphan")
     
     def __repr__(self):
@@ -85,45 +92,50 @@ class Attachment(Base):
         return f"<Attachment(id={self.id}, filename='{self.filename}')>"
 
 # Inventory System
-class Reagent(Base):
-    __tablename__ = 'reagents'
+class Material(Base):
+    __tablename__ = 'materials'
     
     id = Column(Integer, primary_key=True)
     name = Column(String(200), nullable=False, unique=True)
     description = Column(Text)
-    catalog_number = Column(String(100))
-    supplier = Column(String(200))
-    concentration = Column(Float)
-    unit = Column(String(20))  # mg, mL, g, etc.
+    material_type = Column(String(100))  # crystal, dye, gas, optic
+    vendor = Column(String(200))
+    part_number = Column(String(100))
+    wavelength_range = Column(String(100))
+    damage_threshold = Column(Float)
+    unit = Column(String(20))  # mm, %, etc.
     storage_location = Column(String(100))
-    safety_info = Column(Text)
+    handling_notes = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    linked_reagents = relationship("LinkedReagent", back_populates="reagent")
+    linked_materials = relationship("LinkedMaterial", back_populates="material")
     
     def __repr__(self):
-        return f"<Reagent(id={self.id}, name='{self.name}')>"
+        return f"<Material(id={self.id}, name='{self.name}')>"
 
-class Sample(Base):
-    __tablename__ = 'samples'
+class Target(Base):
+    __tablename__ = 'targets'
     
     id = Column(Integer, primary_key=True)
     name = Column(String(200), nullable=False)
-    description = Column(Text)
-    sample_type = Column(String(100))
+    composition = Column(Text)
+    target_type = Column(String(100))  # supersonic jet, molecular beam, thin film
+    backing_gas = Column(String(100))
+    stagnation_pressure = Column(Float)
+    stagnation_pressure_unit = Column(String(20), default='bar')
+    temperature = Column(Float)
+    temperature_unit = Column(String(10), default='K')
     storage_location = Column(String(100))
-    quantity = Column(Float)
-    unit = Column(String(20))
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def __repr__(self):
-        return f"<Sample(id={self.id}, name='{self.name}')>"
+        return f"<Target(id={self.id}, name='{self.name}')>"
 
-class Equipment(Base):
-    __tablename__ = 'equipment'
+class Instrument(Base):
+    __tablename__ = 'instruments'
     
     id = Column(Integer, primary_key=True)
     name = Column(String(200), nullable=False)
@@ -132,29 +144,32 @@ class Equipment(Base):
     location = Column(String(100))
     status = Column(String(20), default='Available')  # Available, In Use, Maintenance
     last_maintenance = Column(DateTime)
+    beamline_position = Column(String(100))
+    control_software = Column(String(100))
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def __repr__(self):
-        return f"<Equipment(id={self.id}, name='{self.name}', status='{self.status}')>"
+        return f"<Instrument(id={self.id}, name='{self.name}', status='{self.status}')>"
 
-class LinkedReagent(Base):
-    __tablename__ = 'linked_reagents'
+class LinkedMaterial(Base):
+    __tablename__ = 'linked_materials'
     
     id = Column(Integer, primary_key=True)
     entry_id = Column(Integer, ForeignKey('entries.id'), nullable=False)
-    reagent_id = Column(Integer, ForeignKey('reagents.id'), nullable=False)
+    material_id = Column(Integer, ForeignKey('materials.id'), nullable=False)
+    usage_context = Column(Text)  # e.g., "Nonlinear crystal in OPO"
     quantity_used = Column(Float)
     unit = Column(String(20))
     notes = Column(Text)
     linked_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships
-    entry = relationship("Entry", back_populates="linked_reagents")
-    reagent = relationship("Reagent", back_populates="linked_reagents")
+    entry = relationship("Entry", back_populates="linked_materials")
+    material = relationship("Material", back_populates="linked_materials")
     
     def __repr__(self):
-        return f"<LinkedReagent(entry_id={self.entry_id}, reagent_id={self.reagent_id})>"
+        return f"<LinkedMaterial(entry_id={self.entry_id}, material_id={self.material_id})>"
 
 # Protocol System
 class Protocol(Base):
