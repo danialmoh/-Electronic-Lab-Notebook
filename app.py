@@ -1,6 +1,7 @@
 import streamlit as st
 import sys
 import os
+import json
 from datetime import datetime, timedelta
 
 # Add current directory to path to import our modules
@@ -63,6 +64,60 @@ page = st.sidebar.selectbox(
         "⚙️ Settings"
     ]
 )
+
+
+def load_felix_payload(entry):
+    if not entry or entry.entry_format != 'felix' or not entry.felix_payload:
+        return None
+    try:
+        return json.loads(entry.felix_payload)
+    except json.JSONDecodeError:
+        return None
+
+
+def format_value_list(value):
+    if not value:
+        return "—"
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (list, tuple, set)):
+        filtered = [str(v) for v in value if v]
+        return ", ".join(filtered) if filtered else "—"
+    return str(value)
+
+
+def render_felix_snapshot(payload):
+    st.markdown("### FELIX Run Snapshot")
+    meta_cols = st.columns(3)
+    with meta_cols[0]:
+        st.markdown(f"**Run Date:** {payload.get('run_date') or '—'}")
+        st.markdown(f"**Start:** {payload.get('start_time') or '—'}")
+        st.markdown(f"**End:** {payload.get('end_time') or '—'}")
+    with meta_cols[1]:
+        st.markdown(f"**Operators:** {format_value_list(payload.get('operators'))}")
+        st.markdown(f"**Campaign:** {payload.get('beamtime_campaign') or '—'}")
+        st.markdown(f"**Instrument:** {payload.get('instrument_location') or '—'}")
+    with meta_cols[2]:
+        st.markdown(f"**Experiment Type:** {payload.get('experiment_type') or '—'}")
+        st.markdown(f"**Outcome:** {payload.get('goal_outcome') or '—'}")
+        st.markdown(f"**Confidence:** {payload.get('confidence_level') or '—'}")
+    
+    st.markdown(f"**Goal:** {payload.get('goal_text') or '—'}")
+    st.markdown(f"**Target m/z:** {format_value_list(payload.get('target_mass_channels'))}")
+    
+    st.markdown("**Conditions:**")
+    st.markdown(
+        f"- Carrier Gas: {payload.get('carrier_gas') or '—'}, Backing Pressure: "
+        f"{payload.get('backing_pressure') or '—'} {payload.get('backing_pressure_unit') or ''}"
+    )
+    st.markdown(
+        f"- IR Sweep: {payload.get('wavelength_start') or '—'}–{payload.get('wavelength_end') or '—'} "
+        f"(step {payload.get('step_size') or '—'}), Pulse Energy: {payload.get('pulse_energy') or '—'} "
+        f"{payload.get('pulse_energy_unit') or ''}"
+    )
+    st.markdown(
+        f"- UV: λ={payload.get('uv_wavelength') or '—'} nm, Scheme: {payload.get('ionization_scheme') or '—'}"
+    )
 
 # Helper functions for pages
 def render_dashboard():
@@ -336,13 +391,20 @@ def render_entries():
             
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("✅ Done Creating", type="primary"):
+                if st.button(
+                    "✅ Done Creating",
+                    type="primary",
+                    key=f"inline_done_creating_{st.session_state.new_entry}"
+                ):
                     st.session_state.new_entry = None
                     st.session_state.pop('new_entry_form_title', None)
                     st.session_state.pop('new_entry_content_type', None)
                     st.rerun()
             with col2:
-                if st.button("❌ Cancel Creation"):
+                if st.button(
+                    "❌ Cancel Creation",
+                    key=f"inline_cancel_creating_{st.session_state.new_entry}"
+                ):
                     st.session_state.pop('new_entry', None)
                     st.session_state.pop('new_entry_form_title', None)
                     st.session_state.pop('new_entry_content_type', None)
@@ -354,8 +416,10 @@ def render_entries():
             
             for entry in entries:
                 lock_icon = "🔒" if entry.is_locked else "📝"
+                payload = load_felix_payload(entry)
+                format_badge = "FELIX IR-UV Logbook" if payload else "Standard Notebook"
                 
-                with st.expander(f"{lock_icon} {entry.title}"):
+                with st.expander(f"{lock_icon} {entry.title} • {format_badge}"):
                     if entry.is_locked:
                         st.warning("🔒 This entry is locked and cannot be edited")
                         st.markdown(f"**Digital Signature:** {entry.digital_signature}")
@@ -366,9 +430,16 @@ def render_entries():
                     with col1:
                         st.markdown(f"**Created:** {format_datetime(entry.created_at)}")
                         st.markdown(f"**Updated:** {format_datetime(entry.updated_at)}")
+                        st.markdown(f"**Format:** {format_badge}")
                         
-                        # Show content
-                        if entry.content:
+                        # Show FELIX snapshot or content
+                        if payload:
+                            with st.container(border=True):
+                                render_felix_snapshot(payload)
+                            if entry.content:
+                                st.markdown("### Narrative Summary")
+                                st.markdown(render_markdown_with_latex(entry.content), unsafe_allow_html=True)
+                        elif entry.content:
                             if entry.content_type == "markdown":
                                 st.markdown("### Content Preview")
                                 st.markdown(render_markdown_with_latex(entry.content), unsafe_allow_html=True)
@@ -824,22 +895,6 @@ def handle_modals():
         with col2:
             if st.button("❌ Cancel Edit"):
                 del st.session_state.edit_entry
-                st.rerun()
-    
-    # New entry editor modal
-    if 'new_entry' in st.session_state and st.session_state.new_entry:
-        st.markdown("### 📝 Create Advanced Entry")
-        render_entry_editor(experiment_id=st.session_state.new_entry, form_key=f"new_entry_{st.session_state.new_entry}")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("✅ Done Creating", type="primary"):
-                st.session_state.new_entry = None
-                st.rerun()
-        
-        with col2:
-            if st.button("❌ Cancel Creation"):
-                del st.session_state.new_entry
                 st.rerun()
     
     # Entry view modal

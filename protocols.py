@@ -364,32 +364,32 @@ def handle_protocol_modals():
     
     # Protocol editor modal
     if 'edit_protocol' in st.session_state and st.session_state.edit_protocol:
-        with st.modal("📝 Protocol Editor"):
-            render_protocol_editor(st.session_state.edit_protocol)
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("💾 Save", type="primary"):
-                    del st.session_state.edit_protocol
-                    st.rerun()
-            
-            with col2:
-                if st.button("❌ Cancel"):
-                    del st.session_state.edit_protocol
-                    st.rerun()
+        st.markdown("### 📝 Protocol Editor")
+        render_protocol_editor(st.session_state.edit_protocol)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("💾 Save", type="primary", key=f"save_protocol_edit_{st.session_state.edit_protocol}"):
+                del st.session_state.edit_protocol
+                st.rerun()
+        
+        with col2:
+            if st.button("❌ Cancel", key=f"cancel_protocol_edit_{st.session_state.edit_protocol}"):
+                del st.session_state.edit_protocol
+                st.rerun()
     
     # Protocol view modal
     if 'view_protocol' in st.session_state and st.session_state.view_protocol:
-        with st.modal("📋 View Protocol"):
+        with st.expander("📋 View Protocol", expanded=True):
             render_protocol_view(st.session_state.view_protocol)
             
-            if st.button("❌ Close"):
+            if st.button("❌ Close", key=f"close_protocol_view_{st.session_state.view_protocol}"):
                 del st.session_state.view_protocol
                 st.rerun()
     
     # Protocol history modal
     if 'protocol_history' in st.session_state and st.session_state.protocol_history:
-        with st.modal("📜 Protocol History"):
+        with st.expander("📜 Protocol History", expanded=True):
             with DatabaseManager() as db:
                 protocol = db.get_protocol(st.session_state.protocol_history)
                 if protocol:
@@ -427,7 +427,7 @@ def handle_protocol_modals():
                                         db.session.commit()
                                         display_success(f"Version {version.version} restored!")
                                         st.rerun()
-            
-            if st.button("❌ Close"):
-                del st.session_state.protocol_history
-                st.rerun()
+                    
+                    if st.button("❌ Close History", key=f"close_protocol_history_{st.session_state.protocol_history}"):
+                        del st.session_state.protocol_history
+                        st.rerun()

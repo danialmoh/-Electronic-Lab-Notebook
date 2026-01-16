@@ -13,7 +13,8 @@ from models import (
     AuditLog,
 )
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
+import json
 
 class DatabaseManager:
     """Centralized database operations for the ELN"""
@@ -123,13 +124,22 @@ class DatabaseManager:
         return False
     
     # Entry operations
-    def create_entry(self, experiment_id: int, title: str, content: str = None, 
-                    content_type: str = 'markdown') -> Entry:
+    def create_entry(
+        self,
+        experiment_id: int,
+        title: str,
+        content: str = None,
+        content_type: str = 'markdown',
+        entry_format: str = 'standard',
+        felix_payload: Optional[Dict[str, Any]] = None,
+    ) -> Entry:
         entry = Entry(
             experiment_id=experiment_id,
             title=title,
             content=content,
-            content_type=content_type
+            content_type=content_type,
+            entry_format=entry_format or 'standard',
+            felix_payload=json.dumps(felix_payload, ensure_ascii=False) if felix_payload else None,
         )
         self.session.add(entry)
         self.session.commit()
@@ -151,9 +161,12 @@ class DatabaseManager:
     def update_entry(self, entry_id: int, **kwargs) -> Optional[Entry]:
         entry = self.get_entry(entry_id)
         if entry and not entry.is_locked:
+            felix_payload = kwargs.pop('felix_payload', None) if 'felix_payload' in kwargs else None
             for key, value in kwargs.items():
                 if hasattr(entry, key):
                     setattr(entry, key, value)
+            if felix_payload is not None:
+                entry.felix_payload = json.dumps(felix_payload, ensure_ascii=False) if felix_payload else None
             entry.updated_at = datetime.utcnow()
             self.session.commit()
             
@@ -304,7 +317,7 @@ class DatabaseManager:
             self.session.commit()
             return True
         return False
-    
+
     # Audit log operations
     def _create_audit_log(self, entry_id: int, action: str, user_id: str, details: str = None):
         audit_log = AuditLog(

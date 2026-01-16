@@ -56,6 +56,8 @@ class Entry(Base):
     title = Column(String(300), nullable=False)
     content = Column(Text)  # Markdown content
     content_type = Column(String(20), default='markdown')  # markdown, plain
+    entry_format = Column(String(50), default='standard')  # standard, felix
+    felix_payload = Column(Text)  # JSON blob for FELIX-format entries
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -171,7 +173,7 @@ class LinkedMaterial(Base):
     def __repr__(self):
         return f"<LinkedMaterial(entry_id={self.entry_id}, material_id={self.material_id})>"
 
-# Protocol System
+
 class Protocol(Base):
     __tablename__ = 'protocols'
     

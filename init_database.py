@@ -129,6 +129,101 @@ def create_sample_data():
 - Simulate spectrum with anharmonic calculations"""
         )
         
+        # Sample FELIX-format entry
+        felix_payload = {
+            "run_date": (datetime.now() - timedelta(days=1)).date().isoformat(),
+            "start_time": "13:05",
+            "end_time": "16:20",
+            "operators": ["Beamline Lead", "Graduate Operator"],
+            "beamtime_campaign": "FELIX-IRUV-2025A",
+            "instrument_location": "FELIX Beamline 3",
+            "experiment_type": "IR-UV ion-dip",
+            "goal_text": "Confirm depletion signature of tryptophan dimer at m/z 205",
+            "precursor_molecules": ["L-tryptophan"],
+            "discharge_enabled": True,
+            "discharge_voltage": 0.9,
+            "discharge_current": 12.0,
+            "discharge_timing_offset": 180.0,
+            "expected_products": "Monomer/dimer distribution with weak trimer tail",
+            "target_mass_channels": ["205", "188"],
+            "carrier_gas": "He",
+            "backing_pressure": 2.2,
+            "backing_pressure_unit": "bar",
+            "valve_type": "General Valve Series 9",
+            "valve_timing": "420 µs",
+            "skimmer_in_place": True,
+            "ir_source": "FELIX",
+            "wavelength_start": 2800.0,
+            "wavelength_end": 3600.0,
+            "step_size": 3.0,
+            "pulse_energy": 4.2,
+            "pulse_energy_unit": "mJ",
+            "repetition_rate": 10.0,
+            "uv_wavelength": 223.1,
+            "uv_pulse_energy": 0.28,
+            "ionization_scheme": "1+1' REMPI",
+            "alignment_status": "Good",
+            "signal_stability": "Stable",
+            "background_level": "Low",
+            "actions": [
+                {
+                    "timestamp": "14:10",
+                    "parameter": "IR focus",
+                    "old_value": "0 mm",
+                    "new_value": "+0.6 mm",
+                    "reason": "Sharpen depletion depth"
+                },
+                {
+                    "timestamp": "15:05",
+                    "parameter": "Valve temp",
+                    "old_value": "120 K",
+                    "new_value": "115 K",
+                    "reason": "Boost dimer fraction"
+                }
+            ],
+            "observations": {
+                "ir_depletion_observed": True,
+                "depletion_positions": ["3338", "3445", "3520 cm⁻¹"],
+                "signal_trend": "Increasing",
+                "noise_level": "Low",
+                "unexpected_tags": ["baseline-drift"],
+                "notes": "Clear 20% depletion at 3520 cm⁻¹ with stable baseline after focus tweak."
+            },
+            "interpretation_notes": "Band at 3520 cm⁻¹ aligns with ν3 of monomer, consistent with shared chromophore.",
+            "reference_comparison": "Matches 2023 FELIX run within 5 cm⁻¹.",
+            "confidence_level": "High",
+            "data_folder_path": "felix_runs/2025A/day3/run12",
+            "mass_spectra_files": ["mass_spectra/run12_ref.ms", "mass_spectra/run12_ir.ms"],
+            "ir_depletion_files": ["ir_scans/run12_full.csv"],
+            "data_quality_notes": "Excellent SNR after averaging 400 shots.",
+            "goal_outcome": "Complete",
+            "key_result": "Confirmed depletion pattern for dimer band, ready for publication plot.",
+            "main_limitation": "Need isotopic substitution for unambiguous assignment.",
+            "next_steps": [
+                "Repeat run with D2 carrier",
+                "Compute anharmonic frequencies for comparison"
+            ],
+            "flags": {
+                "reproducible_run": True,
+                "calibration_valid": True,
+                "alignment_issues": False,
+                "data_questionable": False
+            },
+            "summary_notes": """### FELIX Run Summary
+- Verified FELIX alignment, <2% drift over 3 h
+- Recorded IR ion-dip spectrum at m/z 205 with 3 prominent bands
+- Depletion depth improved to 25% after IR focus adjustment"""
+        }
+        
+        db.create_entry(
+            experiment_id=exp2.id,
+            title="FELIX structured run – tryptophan dimer",
+            content=felix_payload["summary_notes"],
+            content_type="markdown",
+            entry_format="felix",
+            felix_payload=felix_payload
+        )
+        
         # Create sample reagents
         material1 = db.create_material(
             name="KDP Doubling Crystal",
